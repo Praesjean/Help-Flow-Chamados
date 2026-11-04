@@ -1,0 +1,28 @@
+{
+	"name": "microservice-chamados",
+	"version": "1.0.0",
+	"description": "Microserviço responsável pelo gerenciamento de chamados do sistema Help Flow.",
+	"main": "src/server.js",
+	"scripts": {
+		"test": "jest --runInBand",
+		"start": "node src/server.js",
+		"dev": "nodemon src/server.js",
+		"test:coverage": "jest --coverage --runInBand"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"cors": "^2.8.6",
+		"dotenv": "^18.0.9",
+		"express": "^5.3.0",
+		"helmet": "^8.3.0",
+		"mongoose": "^9.11.4",
+		"swagger-ui-express": "^5.0.1"
+	},
+	"devDependencies": {
+		"jest": "^30.5.2",
+		"nodemon": "^3.1.14",
+		"supertest": "^7.3.1"
+	}
+}

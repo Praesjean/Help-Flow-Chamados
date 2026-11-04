@@ -1,0 +1,27 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente e credenciais
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Cobertura de testes
+coverage/
+
+# Arquivos temporários
+tmp/
+temp/
+
+# Configurações locais
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
