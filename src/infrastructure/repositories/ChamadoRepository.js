@@ -5,8 +5,13 @@ class ChamadoRepository {
         return await ChamadoModel.create(dados);
     }
 
-    async listar() {
-        return await ChamadoModel.find().sort({ createdAt: -1 });
+    async listar(usuarioId = null) {
+        const filtro = usuarioId
+            ? { usuarioId: String(usuarioId) }
+            : {};
+
+        return await ChamadoModel.find(filtro)
+            .sort({ createdAt: -1 });
     }
 
     async buscarPorId(id) {

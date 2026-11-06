@@ -1,7 +1,11 @@
 const express = require('express');
+
 const chamadoController = require('../controllers/ChamadoController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
+
+router.use(authMiddleware);
 
 router.post('/', (req, res) => chamadoController.criar(req, res));
 
