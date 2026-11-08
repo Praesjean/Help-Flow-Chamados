@@ -1,18 +1,19 @@
 # Help Flow | Microserviço de Chamados
 
-Microserviço responsável pelo gerenciamento de chamados do sistema Help Flow, desenvolvido como parte do projeto de arquitetura de soluções cloud.
+Microserviço responsável pelo gerenciamento de chamados do sistema Help Flow, desenvolvido como parte do projeto de Arquitetura de Soluções Cloud.
 
 A aplicação disponibiliza uma API REST para criação, consulta, atualização e exclusão de chamados, utilizando autenticação JWT, controle de acesso por perfil e persistência no MongoDB Atlas.
 
 ## 1. Tecnologias utilizadas
 
-- Node.js
+- Node.js 22
 - Express 5
 - MongoDB Atlas
 - Mongoose
 - JSON Web Token (JWT)
 - Helmet e CORS
 - Jest e Supertest
+- Swagger UI
 - Docker
 
 ## 2. Arquitetura
@@ -21,10 +22,10 @@ O projeto utiliza os princípios de Clean Architecture e Vertical Slice Architec
 
 A estrutura está organizada em quatro camadas principais:
 
-- API: recebe requisições HTTP, aplica autenticação e encaminha operações.
-- Application: contém os casos de uso organizados por funcionalidade.
-- Domain: concentra as regras de negócio independentes de frameworks.
-- Infrastructure: implementa a persistência e a comunicação com o MongoDB.
+- **API:** recebe requisições HTTP, aplica autenticação e encaminha operações.
+- **Application:** contém os casos de uso organizados por funcionalidade.
+- **Domain:** concentra as regras de negócio independentes de frameworks.
+- **Infrastructure:** implementa a persistência e a comunicação com o MongoDB.
 
 Estrutura simplificada:
 
@@ -77,15 +78,15 @@ O microserviço utiliza MongoDB Atlas para armazenar os chamados.
 
 Cada chamado contém os seguintes campos:
 
-| Campo | Descrição |
-|---|---|
-| titulo | Título do chamado |
-| descricao | Descrição do problema |
-| status | Situação atual do chamado |
-| prioridade | Nível de prioridade |
-| usuarioId | Identificador do usuário responsável pela abertura |
-| createdAt | Data de criação |
-| updatedAt | Data da última atualização |
+| Campo      | Descrição                                          |
+| ---------- | -------------------------------------------------- |
+| titulo     | Título do chamado                                  |
+| descricao  | Descrição do problema                              |
+| status     | Situação atual do chamado                          |
+| prioridade | Nível de prioridade                                |
+| usuarioId  | Identificador do usuário responsável pela abertura |
+| createdAt  | Data de criação                                    |
+| updatedAt  | Data da última atualização                         |
 
 ### Status permitidos
 
@@ -115,28 +116,28 @@ Perfis utilizados:
 
 ### Regras de acesso
 
-- ADMIN: pode consultar, criar, atualizar e excluir chamados.
-- ATENDENTE: pode consultar e atualizar chamados, conforme as regras da API.
-- CLIENTE: pode consultar seus próprios chamados e realizar operações permitidas sobre eles.
+- **ADMIN:** pode consultar, criar, atualizar e excluir chamados.
+- **ATENDENTE:** pode consultar e atualizar chamados, conforme as regras da API.
+- **CLIENTE:** pode consultar seus próprios chamados e realizar operações permitidas sobre eles.
 - CLIENTE não pode alterar o status dos chamados.
 - A exclusão de chamados é restrita ao ADMIN.
 
 O microserviço de Usuários é responsável pelo login e pela emissão dos tokens JWT.
 
-## 5. Endpoints
+## 5. Endpoints REST
 
 Prefixo principal:
 
 `/api/chamados`
 
-| Método | Endpoint | Descrição |
-|---|---|---|
-| GET | /health | Verificar a disponibilidade da API |
-| POST | /api/chamados | Criar chamado |
-| GET | /api/chamados | Listar chamados |
-| GET | /api/chamados/:id | Consultar chamado |
-| PUT | /api/chamados/:id | Atualizar chamado |
-| DELETE | /api/chamados/:id | Excluir chamado |
+| Método | Endpoint          | Descrição                          |
+| ------ | ----------------- | ---------------------------------- |
+| GET    | /health           | Verificar a disponibilidade da API |
+| POST   | /api/chamados     | Criar chamado                      |
+| GET    | /api/chamados     | Listar chamados                    |
+| GET    | /api/chamados/:id | Consultar chamado                  |
+| PUT    | /api/chamados/:id | Atualizar chamado                  |
+| DELETE | /api/chamados/:id | Excluir chamado                    |
 
 As operações protegidas exigem um token JWT válido.
 
@@ -159,7 +160,17 @@ Authorization: Bearer SEU_TOKEN_JWT
 
 O status inicial do chamado é definido automaticamente como `ABERTO`.
 
-## 6. Configuração do ambiente
+## 6. Documentação Swagger
+
+A API possui documentação interativa utilizando Swagger UI, permitindo consultar os endpoints, visualizar os parâmetros e testar as operações disponíveis.
+
+**Acesso local:**
+
+http://localhost:3001/api-docs
+
+A documentação é disponibilizada pela rota `/api-docs`.
+
+## 7. Configuração do ambiente
 
 ### Pré-requisitos
 
@@ -176,13 +187,17 @@ npm install
 
 Configure o arquivo `.env` de acordo com as variáveis utilizadas pelo projeto.
 
-A configuração deve incluir a conexão com o MongoDB Atlas, a porta da aplicação e o segredo JWT.
+A configuração deve incluir:
+
+- Conexão com o MongoDB Atlas.
+- Porta da aplicação.
+- Segredo JWT.
 
 O segredo JWT deve ser compatível com o utilizado pelo microserviço de Usuários.
 
 **Nunca publique o arquivo `.env`, senhas ou chaves de autenticação no GitHub.**
 
-## 7. Execução local
+## 8. Execução local
 
 Iniciar o servidor:
 
@@ -200,15 +215,17 @@ Porta padrão utilizada no desenvolvimento:
 
 `3001`
 
-Verificar a API:
+### Endereços locais
 
-```text
-http://localhost:3001/health
-```
+| Recurso      | Endereço                       |
+| ------------ | ------------------------------ |
+| API          | http://localhost:3001          |
+| Health Check | http://localhost:3001/health   |
+| Swagger      | http://localhost:3001/api-docs |
 
 No Windows PowerShell, caso a execução de scripts esteja bloqueada, utilize `npm.cmd` no lugar de `npm`.
 
-## 8. Testes automatizados
+## 9. Testes automatizados
 
 O projeto utiliza Jest e Supertest para testar os casos de uso, as regras de domínio, a arquitetura e os endpoints HTTP.
 
@@ -224,27 +241,39 @@ Executar testes com relatório de cobertura:
 npm run test:coverage
 ```
 
-Resultado validado em 06/11/2026:
+### Resultado validado em 06/11/2026
 
 - 6 suítes de testes aprovadas.
 - 87 testes aprovados.
 - Nenhuma falha.
 
-## 9. Docker
+## 10. Docker
 
 O projeto possui um Dockerfile para a criação de uma imagem de contêiner.
 
-Exemplo de build local:
+### Construir a imagem
 
 ```bash
 docker build -t help-flow-chamados .
+```
+
+### Executar o container
+
+```bash
+docker run -d --name help-flow-chamados -p 3001:3001 --env-file .env help-flow-chamados
 ```
 
 A imagem permite executar o microserviço em ambiente conteinerizado, desde que as variáveis de ambiente necessárias sejam fornecidas.
 
 As credenciais do MongoDB e o segredo JWT não devem ser incluídos diretamente na imagem.
 
-## 10. Integração com o Help Flow
+### Docker Hub
+
+O projeto possui imagem publicada no Docker Hub:
+
+https://hub.docker.com/r/jeanpraes/help-flow-chamados
+
+## 11. Integração com o Help Flow
 
 Este microserviço integra a arquitetura distribuída do Help Flow.
 
@@ -269,10 +298,6 @@ MongoDB Atlas
 O BFF é responsável por intermediar as requisições do frontend e integrar os dados dos diferentes microserviços.
 
 O microserviço de Chamados possui banco próprio, seguindo o padrão Database per Service.
-
-## 11. Documentação da API
-
-A aplicação possui configuração de documentação Swagger para facilitar a consulta e o teste dos endpoints.
 
 ## 12. Contexto acadêmico
 
