@@ -1,33 +1,60 @@
 # Help Flow | Microserviço de Chamados
 
-Microserviço responsável pelo gerenciamento de chamados do sistema Help Flow, desenvolvido como parte do projeto de Arquitetura de Soluções Cloud.
+Microserviço responsável pelo gerenciamento de chamados do sistema **Help Flow**, desenvolvido para a disciplina de Arquitetura e Soluções Cloud.
 
-A aplicação disponibiliza uma API REST para criação, consulta, atualização e exclusão de chamados, utilizando autenticação JWT, controle de acesso por perfil e persistência no MongoDB Atlas.
+Disponibiliza uma API REST com CRUD de chamados, autenticação JWT, controle de acesso por perfil e persistência no MongoDB Atlas. Também implementa comunicação assíncrona por meio do **Azure Service Bus**, utilizando Event-Driven Architecture (EDA).
+
+### Integrantes
+
+- Erick Misturi Machado
+- Jean Inácio Praes Moura
+- João Gabriel de Lima Coltre
+- Stefany Carlos de Oliveira
+
+O microserviço de Chamados representa o domínio responsável pelo gerenciamento dos atendimentos do Help Flow.
 
 ## 1. Tecnologias utilizadas
 
 - Node.js 22
 - Express 5
-- MongoDB Atlas
-- Mongoose
+- MongoDB Atlas e Mongoose
 - JSON Web Token (JWT)
 - Helmet e CORS
 - Jest e Supertest
-- Swagger UI
-- Docker
+- Swagger UI / OpenAPI 3.0
+- Azure Service Bus
+- Azure Container Apps
+- Docker e Docker Hub
+- Git e GitHub
 
 ## 2. Arquitetura
 
-O projeto utiliza os princípios de Clean Architecture e Vertical Slice Architecture.
+O microserviço aplica **Clean Architecture**, **Vertical Slice Architecture**, **Database per Service** e **Event-Driven Architecture**.
 
-A estrutura está organizada em quatro camadas principais:
+### Clean Architecture
 
-- **API:** recebe requisições HTTP, aplica autenticação e encaminha operações.
-- **Application:** contém os casos de uso organizados por funcionalidade.
-- **Domain:** concentra as regras de negócio independentes de frameworks.
-- **Infrastructure:** implementa a persistência e a comunicação com o MongoDB.
+A aplicação é dividida em quatro camadas:
 
-Estrutura simplificada:
+| Camada | Responsabilidade |
+|---|---|
+| API | Receber requisições HTTP, aplicar autenticação e encaminhar operações |
+| Application | Executar os casos de uso do sistema |
+| Domain | Concentrar entidades, validações e regras de negócio |
+| Infrastructure | Implementar acesso ao MongoDB e comunicação com Azure Service Bus |
+
+### Vertical Slice Architecture
+
+Os casos de uso são organizados por funcionalidade:
+
+- `CreateChamado`
+- `GetChamado`
+- `ListChamados`
+- `UpdateChamado`
+- `DeleteChamado`
+
+Essa organização permite manter cada operação separada, com responsabilidades específicas.
+
+### Estrutura simplificada
 
 ```text
 src/
@@ -44,108 +71,82 @@ src/
 │       └── updateChamado/
 ├── domain/
 │   └── entities/
-│       └── Chamado.js
 ├── infrastructure/
 │   ├── database/
-│   └── repositories/
+│   ├── repositories/
+│   └── messaging/
+│       └── ServiceBusPublisher.js
 ├── app.js
-└── server.js
+├── server.js
+└── consumer.js
 ```
-
-### Clean Architecture
-
-A camada de domínio centraliza as validações de título, descrição, prioridade e status dos chamados.
-
-Os casos de uso coordenam as operações e utilizam o repositório para persistir ou consultar os dados.
-
-A infraestrutura utiliza Mongoose para acessar o MongoDB Atlas.
-
-### Vertical Slice Architecture
-
-As funcionalidades são organizadas em casos de uso independentes:
-
-- CreateChamado
-- GetChamado
-- ListChamados
-- UpdateChamado
-- DeleteChamado
-
-Essa organização separa as responsabilidades de cada operação.
 
 ## 3. Banco de dados
 
-O microserviço utiliza MongoDB Atlas para armazenar os chamados.
+O microserviço utiliza o **MongoDB Atlas**, seguindo o padrão Database per Service.
 
-Cada chamado contém os seguintes campos:
+Cada chamado possui os seguintes campos:
 
-| Campo      | Descrição                                          |
-| ---------- | -------------------------------------------------- |
-| titulo     | Título do chamado                                  |
-| descricao  | Descrição do problema                              |
-| status     | Situação atual do chamado                          |
-| prioridade | Nível de prioridade                                |
-| usuarioId  | Identificador do usuário responsável pela abertura |
-| createdAt  | Data de criação                                    |
-| updatedAt  | Data da última atualização                         |
+| Campo | Descrição |
+|---|---|
+| titulo | Título do chamado |
+| descricao | Descrição do problema |
+| status | Situação atual |
+| prioridade | Nível de prioridade |
+| usuarioId | Identificador do usuário |
+| createdAt | Data de criação |
+| updatedAt | Data da última atualização |
 
 ### Status permitidos
 
-- ABERTO
-- EM_ANDAMENTO
-- RESOLVIDO
-- FECHADO
+- `ABERTO`
+- `EM_ANDAMENTO`
+- `RESOLVIDO`
+- `FECHADO`
 
 ### Prioridades permitidas
 
-- BAIXA
-- MEDIA
-- ALTA
-- CRITICA
+- `BAIXA`
+- `MEDIA`
+- `ALTA`
+- `CRITICA`
 
 ## 4. Autenticação e autorização
 
-A API utiliza JWT para autenticar as requisições.
+A API utiliza tokens JWT para autenticação.
 
-O token é validado pelo middleware de autenticação antes de permitir o acesso aos endpoints protegidos.
+O microserviço de Usuários é responsável pelo login e pela emissão dos tokens. O microserviço de Chamados valida esses tokens antes de permitir operações protegidas.
 
 Perfis utilizados:
 
-- ADMIN
-- ATENDENTE
-- CLIENTE
+- `ADMIN`
+- `ATENDENTE`
+- `CLIENTE`
 
 ### Regras de acesso
 
 - **ADMIN:** pode consultar, criar, atualizar e excluir chamados.
-- **ATENDENTE:** pode consultar e atualizar chamados, conforme as regras da API.
-- **CLIENTE:** pode consultar seus próprios chamados e realizar operações permitidas sobre eles.
-- CLIENTE não pode alterar o status dos chamados.
-- A exclusão de chamados é restrita ao ADMIN.
+- **ATENDENTE:** pode consultar e atualizar chamados conforme as regras da API.
+- **CLIENTE:** pode consultar seus chamados e executar as operações permitidas.
+- O perfil CLIENTE não pode alterar o status dos chamados.
+- A exclusão é restrita ao perfil ADMIN.
 
-O microserviço de Usuários é responsável pelo login e pela emissão dos tokens JWT.
-
-## 5. Endpoints REST
-
-Prefixo principal:
-
-`/api/chamados`
-
-| Método | Endpoint          | Descrição                          |
-| ------ | ----------------- | ---------------------------------- |
-| GET    | /health           | Verificar a disponibilidade da API |
-| POST   | /api/chamados     | Criar chamado                      |
-| GET    | /api/chamados     | Listar chamados                    |
-| GET    | /api/chamados/:id | Consultar chamado                  |
-| PUT    | /api/chamados/:id | Atualizar chamado                  |
-| DELETE | /api/chamados/:id | Excluir chamado                    |
-
-As operações protegidas exigem um token JWT válido.
-
-Exemplo de cabeçalho:
+Exemplo de autenticação:
 
 ```http
 Authorization: Bearer SEU_TOKEN_JWT
 ```
+
+## 5. Endpoints REST
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/health` | Verificar disponibilidade |
+| POST | `/api/chamados` | Criar chamado |
+| GET | `/api/chamados` | Listar chamados |
+| GET | `/api/chamados/:id` | Consultar chamado por ID |
+| PUT | `/api/chamados/:id` | Atualizar chamado |
+| DELETE | `/api/chamados/:id` | Excluir chamado |
 
 ### Exemplo de criação
 
@@ -158,25 +159,113 @@ Authorization: Bearer SEU_TOKEN_JWT
 }
 ```
 
-O status inicial do chamado é definido automaticamente como `ABERTO`.
+O status inicial é definido automaticamente como `ABERTO`.
 
 ## 6. Documentação Swagger
 
-A API possui documentação interativa utilizando Swagger UI, permitindo consultar os endpoints, visualizar os parâmetros e testar as operações disponíveis.
+A API possui documentação interativa com Swagger UI e OpenAPI 3.0.
 
-**Acesso local:**
+**Swagger público:**
+
+https://helpflow-chamados.victoriousground-a72b89ca.centralus.azurecontainerapps.io/api-docs
+
+**Swagger local:**
 
 http://localhost:3001/api-docs
 
-A documentação é disponibilizada pela rota `/api-docs`.
+A documentação apresenta os endpoints de listagem, criação, consulta por ID, atualização e exclusão de chamados.
 
-## 7. Configuração do ambiente
+## 7. Event-Driven Architecture (EDA)
+
+O microserviço implementa comunicação assíncrona utilizando o **Azure Service Bus**.
+
+Após operações de criação, atualização ou exclusão, o microserviço publica um evento na fila `chamados-eventos`.
+
+### Eventos implementados
+
+| Evento | Operação que o produz |
+|---|---|
+| `ChamadoCriado` | Criação de chamado |
+| `ChamadoAtualizado` | Atualização de chamado |
+| `ChamadoExcluido` | Exclusão de chamado |
+
+### Publicador
+
+O arquivo `src/infrastructure/messaging/ServiceBusPublisher.js` é responsável por publicar mensagens no Azure Service Bus.
+
+### Consumidor
+
+O arquivo `src/consumer.js` implementa um processo independente que recebe os eventos e registra seu processamento nos logs.
+
+O consumidor utiliza uma política de acesso com permissão `Listen`, enquanto o produtor utiliza uma política com permissão `Send`.
+
+### Infraestrutura Azure
+
+| Recurso | Identificação |
+|---|---|
+| Namespace Service Bus | `helpflow-servicebus` |
+| Fila | `chamados-eventos` |
+| Container App produtor | `helpflow-chamados` |
+| Container App consumidor | `helpflow-eventos-consumer` |
+| Grupo de recursos | `rg-helpflow` |
+| Região | Central US |
+
+### Fluxo assíncrono
+
+```text
+Frontend React
+      |
+      v
+AWS API Gateway
+      |
+      v
+BFF Node.js
+      |
+      v
+Microserviço de Chamados
+      |
+      +----> MongoDB Atlas
+      |
+      v
+Azure Service Bus
+Fila: chamados-eventos
+      |
+      v
+Consumer (Azure Container Apps)
+      |
+      v
+Processamento e registro nos logs
+```
+
+O consumidor não depende de execução local, pois está implantado no Azure Container Apps.
+
+### Validação dos eventos
+
+Em 09/11/2026, foram testados os eventos de criação, atualização e exclusão de chamados.
+
+Os logs do consumidor confirmaram o recebimento dos três tipos:
+
+```text
+[Consumer] Evento recebido: ChamadoCriado
+[Consumer] Novo chamado registrado.
+
+[Consumer] Evento recebido: ChamadoAtualizado
+[Consumer] Chamado atualizado.
+
+[Consumer] Evento recebido: ChamadoExcluido
+[Consumer] Chamado excluído.
+```
+
+Os testes demonstraram a comunicação assíncrona entre o microserviço e o consumidor por meio do Azure Service Bus.
+
+## 8. Configuração do ambiente
 
 ### Pré-requisitos
 
 - Node.js 22
 - npm
-- Acesso a um cluster MongoDB Atlas
+- MongoDB Atlas configurado
+- Acesso ao Azure Service Bus para utilizar a integração EDA
 - Variáveis de ambiente configuradas
 
 Instale as dependências:
@@ -185,123 +274,155 @@ Instale as dependências:
 npm install
 ```
 
-Configure o arquivo `.env` de acordo com as variáveis utilizadas pelo projeto.
+Configure as variáveis de ambiente exigidas pela aplicação, incluindo:
 
-A configuração deve incluir:
+| Variável | Finalidade |
+|---|---|
+| `PORT` | Porta HTTP do microserviço |
+| `SERVICEBUS_CONNECTION_STRING` | Conexão com a fila do Azure Service Bus |
+| Variável de conexão MongoDB | Acesso ao MongoDB Atlas |
+| Variável de segredo JWT | Validação dos tokens JWT |
 
-- Conexão com o MongoDB Atlas.
-- Porta da aplicação.
-- Segredo JWT.
+Os nomes das variáveis de MongoDB e JWT devem seguir a configuração efetivamente utilizada pelo código.
 
-O segredo JWT deve ser compatível com o utilizado pelo microserviço de Usuários.
+O produtor deve utilizar uma connection string com permissão `Send`. O consumidor deve utilizar uma connection string com permissão `Listen`.
 
-**Nunca publique o arquivo `.env`, senhas ou chaves de autenticação no GitHub.**
+**Nunca publique arquivos `.env`, senhas, tokens ou connection strings no GitHub.**
 
-## 8. Execução local
+## 9. Execução local
 
-Iniciar o servidor:
+### Iniciar a API
 
 ```bash
 npm start
 ```
 
-Executar em modo de desenvolvimento:
+### Executar em desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-Porta padrão utilizada no desenvolvimento:
+A API utiliza a porta `3001` no ambiente de desenvolvimento.
 
-`3001`
+### Executar o consumidor
+
+Com `SERVICEBUS_CONNECTION_STRING` configurada no ambiente:
+
+```bash
+node src/consumer.js
+```
+
+O consumidor inicia e aguarda mensagens da fila.
 
 ### Endereços locais
 
-| Recurso      | Endereço                       |
-| ------------ | ------------------------------ |
-| API          | http://localhost:3001          |
-| Health Check | http://localhost:3001/health   |
-| Swagger      | http://localhost:3001/api-docs |
+| Recurso | Endereço |
+|---|---|
+| API | http://localhost:3001 |
+| Health Check | http://localhost:3001/health |
+| Swagger | http://localhost:3001/api-docs |
 
-No Windows PowerShell, caso a execução de scripts esteja bloqueada, utilize `npm.cmd` no lugar de `npm`.
+No Windows PowerShell, caso exista bloqueio de scripts, utilize `npm.cmd` em vez de `npm`.
 
-## 9. Testes automatizados
+## 10. Testes automatizados
 
-O projeto utiliza Jest e Supertest para testar os casos de uso, as regras de domínio, a arquitetura e os endpoints HTTP.
+O projeto utiliza **Jest e Supertest** para validar:
 
-Executar todos os testes:
+- Casos de uso
+- Regras de domínio
+- Endpoints HTTP
+- Organização arquitetural
+
+Executar os testes:
 
 ```bash
 npm test
 ```
 
-Executar testes com relatório de cobertura:
+Executar com relatório de cobertura:
 
 ```bash
 npm run test:coverage
 ```
 
-### Resultado validado em 06/11/2026
+### Resultado da execução validada
 
-- 6 suítes de testes aprovadas.
-- 87 testes aprovados.
-- Nenhuma falha.
+- 6 suítes de testes aprovadas
+- 87 testes aprovados
+- Nenhuma falha
 
-## 10. Docker
+A execução dos testes foi validada durante o desenvolvimento da integração.
 
-O projeto possui um Dockerfile para a criação de uma imagem de contêiner.
+## 11. Docker e implantação
 
-### Construir a imagem
+O microserviço possui Dockerfile e imagens publicadas no Docker Hub.
+
+**Repositório Docker Hub:**
+
+https://hub.docker.com/r/jeanpraes/help-flow-chamados
+
+### Construir imagem local
 
 ```bash
 docker build -t help-flow-chamados .
 ```
 
-### Executar o container
+### Executar API em contêiner
 
 ```bash
 docker run -d --name help-flow-chamados -p 3001:3001 --env-file .env help-flow-chamados
 ```
 
-A imagem permite executar o microserviço em ambiente conteinerizado, desde que as variáveis de ambiente necessárias sejam fornecidas.
+### Imagens utilizadas na Azure
 
-As credenciais do MongoDB e o segredo JWT não devem ser incluídos diretamente na imagem.
+| Componente | Imagem |
+|---|---|
+| API de Chamados | `jeanpraes/help-flow-chamados:v3` |
+| Consumidor de eventos | `jeanpraes/help-flow-chamados:v4` |
 
-### Docker Hub
+A imagem `v4` inclui o consumidor independente, executado com o comando:
 
-O projeto possui imagem publicada no Docker Hub:
-
-https://hub.docker.com/r/jeanpraes/help-flow-chamados
-
-## 11. Integração com o Help Flow
-
-Este microserviço integra a arquitetura distribuída do Help Flow.
-
-Fluxo principal:
-
-```text
-Microfrontend (React)
-        |
-        v
-API Gateway
-        |
-        v
-BFF (Node.js)
-        |
-        v
-Microserviço de Chamados
-        |
-        v
-MongoDB Atlas
+```bash
+node src/consumer.js
 ```
 
-O BFF é responsável por intermediar as requisições do frontend e integrar os dados dos diferentes microserviços.
+### Implantação no Azure Container Apps
 
-O microserviço de Chamados possui banco próprio, seguindo o padrão Database per Service.
+**Health Check público da API:**
 
-## 12. Contexto acadêmico
+https://helpflow-chamados.victoriousground-a72b89ca.centralus.azurecontainerapps.io/health
 
-Projeto desenvolvido para a disciplina de Arquitetura e Soluções Cloud, como parte da implementação de uma aplicação distribuída utilizando:
+**Swagger público:**
+
+https://helpflow-chamados.victoriousground-a72b89ca.centralus.azurecontainerapps.io/api-docs
+
+O consumidor é executado em um Container App separado, sem exposição HTTP pública.
+
+As credenciais são configuradas como segredos e referenciadas por variáveis de ambiente.
+
+## 12. Integração com o Help Flow
+
+O microserviço faz parte de uma solução distribuída composta por:
+
+- Microfrontend React
+- AWS API Gateway
+- BFF Node.js
+- Microserviço de Chamados com MongoDB Atlas
+- Microserviço de Usuários com Azure SQL
+- Azure Function HTTP Trigger
+- Azure Service Bus
+- Consumidor de eventos no Azure Container Apps
+
+O frontend utiliza o BFF como intermediário para acessar os serviços.
+
+O BFF também disponibiliza o endpoint `GET /aggregated-data`, que consolida informações dos dois microserviços e da Azure Function.
+
+Cada microserviço possui seu próprio banco de dados, aplicando o padrão **Database per Service**.
+
+## 13. Contexto acadêmico
+
+Projeto desenvolvido para a disciplina de **Arquitetura e Soluções Cloud**, com o objetivo de demonstrar uma aplicação distribuída utilizando:
 
 - Clean Architecture
 - Vertical Slice Architecture
@@ -311,5 +432,3 @@ Projeto desenvolvido para a disciplina de Arquitetura e Soluções Cloud, como p
 - Database per Service
 - Serverless
 - Event-Driven Architecture
-
-O microserviço de Chamados representa o componente responsável pelo gerenciamento dos atendimentos do Help Flow.
