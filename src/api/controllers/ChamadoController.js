@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 
 const ChamadoRepository = require('../../infrastructure/repositories/ChamadoRepository');
 
+const ServiceBusPublisher = require('../../infrastructure/messaging/ServiceBusPublisher');
+
 const CreateChamadoUseCase = require('../../application/features/createChamado/CreateChamadoUseCase');
 const ListChamadosUseCase = require('../../application/features/listChamados/ListChamadosUseCase');
 const GetChamadoUseCase = require('../../application/features/getChamado/GetChamadoUseCase');
@@ -10,11 +12,28 @@ const DeleteChamadoUseCase = require('../../application/features/deleteChamado/D
 
 const chamadoRepository = new ChamadoRepository();
 
-const createChamadoUseCase = new CreateChamadoUseCase(chamadoRepository);
-const listChamadosUseCase = new ListChamadosUseCase(chamadoRepository);
-const getChamadoUseCase = new GetChamadoUseCase(chamadoRepository);
-const updateChamadoUseCase = new UpdateChamadoUseCase(chamadoRepository);
-const deleteChamadoUseCase = new DeleteChamadoUseCase(chamadoRepository);
+const createChamadoUseCase = new CreateChamadoUseCase(
+    chamadoRepository,
+    ServiceBusPublisher
+);
+
+const listChamadosUseCase = new ListChamadosUseCase(
+    chamadoRepository
+);
+
+const getChamadoUseCase = new GetChamadoUseCase(
+    chamadoRepository
+);
+
+const updateChamadoUseCase = new UpdateChamadoUseCase(
+    chamadoRepository,
+    ServiceBusPublisher
+);
+
+const deleteChamadoUseCase = new DeleteChamadoUseCase(
+    chamadoRepository,
+    ServiceBusPublisher
+);
 
 function tratarErro(res, error, operacao) {
     if (error.status === 401 || error.status === 403) {
